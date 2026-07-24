@@ -23,4 +23,4 @@ Health check: `http://localhost:8000/health`
 
 Produces `backend/dist/lambda.zip` for OpenTofu (`lambda_zip_path`).
 
-> **Note:** Packaging on macOS produces macOS wheels. For production deploys, run the script on Linux (CI runner or container) so native deps match the Lambda runtime.
+Installs **x86_64 manylinux** wheels by default so the zip works on Lambda even when you package from aarch64 / Apple Silicon. Override with `LAMBDA_PLATFORM` if you change the function architecture.

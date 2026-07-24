@@ -47,6 +47,8 @@ Required when `enable_api = true`:
 # → backend/dist/lambda.zip
 ```
 
+The script installs **manylinux x86_64** wheels so the zip matches the default Lambda architecture — even on Apple Silicon / aarch64 hosts. Host-native wheels (e.g. `aarch64`) cause Lambda import failures (`pydantic_core._pydantic_core`).
+
 ### 3. First infrastructure apply
 
 ```bash
@@ -127,7 +129,26 @@ tofu plan -out=tfplan
 tofu apply tfplan
 ```
 
-Open the CloudFront URL → you should land on **Sign in**. Create an account, confirm the email code, sign in → **Hello, world**.
+Open the CloudFront URL → you should land on **Sign in**. Create an account, confirm the email code, sign in → **Hello, world**. API health should show JSON (`status: ok`).
+
+### Subsequent deploys (after the stack exists)
+
+| Change | What to run |
+|--------|-------------|
+| Backend code | `./backend/scripts/package.sh` → `cd infra/envs/dev && tofu apply` |
+| Frontend code or `frontend/.env` | `cd frontend && npm run build` → `aws s3 sync` → CloudFront invalidation |
+| Infra only (tfvars / modules) | `cd infra/envs/dev && tofu plan -out=tfplan && tofu apply tfplan` |
+
+`VITE_*` values are baked in at **build** time. Updating `.env` and syncing an old `dist/` keeps the previous Cognito/API IDs — always `npm run build` first.
+
+### Common pitfalls
+
+| Symptom | Likely cause |
+|---------|----------------|
+| Blank page | Old/missing SPA assets, or Cognito JS without Vite `global → globalThis` |
+| `User pool client … does not exist` | Frontend built with stale Cognito IDs — rebuild after wiring `.env` |
+| API health “Load failed” / Lambda `pydantic_core` import error | Zip packaged with host-native (aarch64) wheels — use `./backend/scripts/package.sh` (forces x86_64). Common on **OrbStack Ubuntu on Apple Silicon** |
+| CORS / Google callback errors | CloudFront origin missing from `cors_allow_origins` / Cognito URLs, or callback path not `/auth/callback` |
 
 ### Destroy and recreate
 

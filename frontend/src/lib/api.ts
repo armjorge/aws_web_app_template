@@ -7,7 +7,12 @@ export async function apiFetch<T>(
   authenticated = false,
 ): Promise<T> {
   const headers = new Headers(init.headers)
-  headers.set('Content-Type', 'application/json')
+  const method = (init.method ?? 'GET').toUpperCase()
+  // Avoid Content-Type on body-less GETs — it forces a CORS preflight that
+  // hits the JWT-protected catch-all OPTIONS route and fails in the browser.
+  if (method !== 'GET' && method !== 'HEAD' && !headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json')
+  }
 
   if (authenticated) {
     const token = await getIdToken()
