@@ -1,0 +1,36 @@
+@import "tailwindcss";
+
+:root {
+  --color-bg: #f7f6f3;
+  --color-ink: #1c1b19;
+  --color-muted: #5c5852;
+  --color-accent: #0f6e56;
+  --color-accent-hover: #0b5744;
+  --color-border: #d9d4cb;
+  --color-surface: #ffffff;
+  --font-sans: "IBM Plex Sans", "Segoe UI", sans-serif;
+}
+
+@layer base {
+  html {
+    font-family: var(--font-sans);
+    color: var(--color-ink);
+    background:
+      radial-gradient(circle at top left, rgba(15, 110, 86, 0.08), transparent 40%),
+      linear-gradient(180deg, #fbfaf7 0%, var(--color-bg) 100%);
+    min-height: 100%;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+  }
+
+  #root {
+    min-height: 100vh;
+  }
+
+  a {
+    color: var(--color-accent);
+  }
+}
