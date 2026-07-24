@@ -20,8 +20,7 @@ enable_hosted_ui           = true
 # Package the backend first: ./backend/scripts/package.sh
 lambda_zip_path = "../../../backend/dist/lambda.zip"
 
-# First apply: localhost only is fine.
-# After CloudFront exists, add https://YOUR_DISTRIBUTION.cloudfront.net and re-apply.
+# Extra origins only — CloudFront site URL is merged automatically from the frontend module.
 cors_allow_origins = [
   "http://localhost:5173",
 ]

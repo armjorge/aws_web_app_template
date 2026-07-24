@@ -14,18 +14,13 @@ enable_hosted_ui           = true
 
 lambda_zip_path = "../../../backend/dist/lambda.zip"
 
-# Replace with your CloudFront site URL after the first apply
-cors_allow_origins = [
-  "https://REPLACE_WITH_CLOUDFRONT_DOMAIN",
-]
+# Extra origins only — CloudFront is merged automatically.
+# Add a custom domain here when you attach one to CloudFront.
+cors_allow_origins = []
 
-cognito_callback_urls = [
-  "https://REPLACE_WITH_CLOUDFRONT_DOMAIN/auth/callback",
-]
+cognito_callback_urls = []
 
-cognito_logout_urls = [
-  "https://REPLACE_WITH_CLOUDFRONT_DOMAIN/",
-]
+cognito_logout_urls = []
 
 tags = {
   Owner = "platform"

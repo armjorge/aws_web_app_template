@@ -10,6 +10,11 @@ import {
 
 import { env, isCognitoConfigured, isHostedUiConfigured } from '../config/env'
 import {
+  identifyUser,
+  resetAnalytics,
+  track,
+} from '../lib/analytics'
+import {
   completeOAuthCallback,
   confirmForgotPassword,
   confirmSignUp,
@@ -73,7 +78,9 @@ export function AuthProvider({ children }: Props) {
     getCurrentSession()
       .then((session) => {
         if (!cancelled && session) {
-          setUser(sessionToUser(session))
+          const next = sessionToUser(session)
+          setUser(next)
+          identifyUser(next)
         }
       })
       .catch(() => {
@@ -90,42 +97,56 @@ export function AuthProvider({ children }: Props) {
 
   const handleSignIn = useCallback(async (email: string, password: string) => {
     const session = await signIn(email, password)
-    setUser(sessionToUser(session))
+    const next = sessionToUser(session)
+    setUser(next)
+    identifyUser(next)
+    track('user_signed_in', { method: 'password' })
   }, [])
 
   const handleSignUp = useCallback(async (email: string, password: string) => {
     await signUp(email, password)
+    track('user_signed_up', { method: 'password' })
   }, [])
 
   const handleConfirm = useCallback(async (email: string, code: string) => {
     await confirmSignUp(email, code)
+    track('user_confirmed_signup')
   }, [])
 
   const handleForgotPassword = useCallback(async (email: string) => {
     await forgotPassword(email)
+    track('password_reset_requested')
   }, [])
 
   const handleConfirmForgotPassword = useCallback(
     async (email: string, code: string, newPassword: string) => {
       await confirmForgotPassword(email, code, newPassword)
+      track('password_reset_completed')
     },
     [],
   )
 
   const handleGoogle = useCallback(async () => {
+    track('oauth_redirect_started', { provider: 'Google' })
     await startHostedUiSignIn('Google')
   }, [])
 
   const handleHostedUi = useCallback(async () => {
+    track('oauth_redirect_started', { provider: 'COGNITO' })
     await startHostedUiSignIn()
   }, [])
 
   const handleCompleteOAuth = useCallback(async (code: string) => {
     const session = await completeOAuthCallback(code)
-    setUser(sessionToUser(session))
+    const next = sessionToUser(session)
+    setUser(next)
+    identifyUser(next)
+    track('user_signed_in', { method: 'oauth' })
   }, [])
 
   const handleSignOut = useCallback(() => {
+    track('user_signed_out')
+    resetAnalytics()
     if (hostedUiConfigured) {
       hostedUiSignOut()
       return

@@ -89,57 +89,26 @@ VITE_ENABLE_GOOGLE_AUTH=false
 ### 5. Build and publish the SPA
 
 ```bash
-cd frontend
-npm install
-npm run build
-
-aws s3 sync dist/ s3://$(cd ../infra/envs/dev && tofu output -raw frontend_bucket_name)/ --delete
-aws cloudfront create-invalidation \
-  --distribution-id "$(cd ../infra/envs/dev && tofu output -raw frontend_distribution_id)" \
-  --paths "/*"
+# from repo root — builds, syncs S3, invalidates CloudFront
+./scripts/deploy-frontend.sh
+# or: ./scripts/deploy-frontend.sh prod
 ```
 
 Site URL: `tofu output -raw frontend_site_url`
 
-### 6. Second apply — allow the CloudFront origin
+CloudFront is **auto-merged** into API CORS and Cognito callback/logout URLs on apply (no manual second apply for that). Keep localhost (and any custom domains) in `terraform.tfvars` as extras.
 
-After the first apply you have a real CloudFront URL. Add it to CORS and Cognito URLs, then re-apply:
-
-```hcl
-# infra/envs/dev/terraform.tfvars
-cors_allow_origins = [
-  "http://localhost:5173",
-  "https://YOUR_DISTRIBUTION.cloudfront.net",
-]
-
-cognito_callback_urls = [
-  "http://localhost:5173/auth/callback",
-  "https://YOUR_DISTRIBUTION.cloudfront.net/auth/callback",
-]
-
-cognito_logout_urls = [
-  "http://localhost:5173/",
-  "https://YOUR_DISTRIBUTION.cloudfront.net/",
-]
-```
-
-```bash
-cd infra/envs/dev
-tofu plan -out=tfplan
-tofu apply tfplan
-```
-
-Open the CloudFront URL → you should land on **Sign in**. Create an account, confirm the email code, sign in → **Hello, world**. API health should show JSON (`status: ok`).
+Open the CloudFront URL → **Sign in** → confirm email → **Hello, world**. API health should show JSON (`status: ok`).
 
 ### Subsequent deploys (after the stack exists)
 
 | Change | What to run |
 |--------|-------------|
 | Backend code | `./backend/scripts/package.sh` → `cd infra/envs/dev && tofu apply` |
-| Frontend code or `frontend/.env` | `cd frontend && npm run build` → `aws s3 sync` → CloudFront invalidation |
+| Frontend code or `frontend/.env` | `./scripts/deploy-frontend.sh` |
 | Infra only (tfvars / modules) | `cd infra/envs/dev && tofu plan -out=tfplan && tofu apply tfplan` |
 
-`VITE_*` values are baked in at **build** time. Updating `.env` and syncing an old `dist/` keeps the previous Cognito/API IDs — always `npm run build` first.
+`VITE_*` values are baked in at **build** time. Updating `.env` and syncing an old `dist/` keeps the previous Cognito/API IDs — always rebuild (the deploy script does this).
 
 ### Common pitfalls
 
@@ -148,17 +117,47 @@ Open the CloudFront URL → you should land on **Sign in**. Create an account, c
 | Blank page | Old/missing SPA assets, or Cognito JS without Vite `global → globalThis` |
 | `User pool client … does not exist` | Frontend built with stale Cognito IDs — rebuild after wiring `.env` |
 | API health “Load failed” / Lambda `pydantic_core` import error | Zip packaged with host-native (aarch64) wheels — use `./backend/scripts/package.sh` (forces x86_64). Common on **OrbStack Ubuntu on Apple Silicon** |
-| CORS / Google callback errors | CloudFront origin missing from `cors_allow_origins` / Cognito URLs, or callback path not `/auth/callback` |
+| CORS / Google callback errors | Custom domain missing from tfvars extras, or callback path not `/auth/callback` |
 
 ### Destroy and recreate
 
 ```bash
 cd infra/envs/dev
 tofu destroy
-# then repeat steps 2–6
+# then repeat steps 2–5
 ```
 
 `force_destroy` is enabled on the dev site bucket so destroy can empty S3 automatically. Prod keeps stricter defaults.
+
+---
+
+## Analytics (PostHog)
+
+Web events are tracked with PostHog when `VITE_ENABLE_ANALYTICS=true` and `VITE_POSTHOG_KEY` is set.
+
+1. Create a project at [PostHog](https://posthog.com/) (US cloud host default: `https://us.i.posthog.com`).
+2. Copy the **Project API key** into `frontend/.env`:
+
+   ```bash
+   VITE_ENABLE_ANALYTICS=true
+   VITE_POSTHOG_KEY=phc_...
+   VITE_POSTHOG_HOST=https://us.i.posthog.com
+   # Optional (higher volume/cost):
+   VITE_POSTHOG_SESSION_RECORDING=false
+   ```
+
+3. Redeploy the SPA: `./scripts/deploy-frontend.sh`
+
+What gets tracked:
+
+| Type | Details |
+|------|---------|
+| Pageviews / pageleaves | SPA route changes via `history_change` |
+| Autocapture | Clicks and form interactions |
+| Auth events | `user_signed_in`, `user_signed_up`, `user_confirmed_signup`, `password_reset_*`, `user_signed_out`, OAuth redirects |
+| Identify | Cognito `sub` + email after login |
+
+Leave `VITE_POSTHOG_KEY` empty to keep analytics a no-op.
 
 ---
 
@@ -185,7 +184,7 @@ tofu destroy
    google_client_secret = "...."
    ```
 
-4. `tofu apply`, then in `frontend/.env` set `VITE_ENABLE_GOOGLE_AUTH=true`, rebuild, and re-sync to S3.
+4. `tofu apply`, then in `frontend/.env` set `VITE_ENABLE_GOOGLE_AUTH=true` and run `./scripts/deploy-frontend.sh`.
 
 ---
 
@@ -231,7 +230,8 @@ App: http://localhost:5173
 | `VITE_ENABLE_AUTH` | Toggle Cognito UI/hooks |
 | `VITE_ENABLE_GOOGLE_AUTH` | Show “Continue with Google” |
 | `VITE_ENABLE_ANALYTICS` | Toggle PostHog provider |
-| `VITE_POSTHOG_KEY` / `VITE_POSTHOG_HOST` | PostHog (blank key = no-op) |
+| `VITE_POSTHOG_KEY` / `VITE_POSTHOG_HOST` | PostHog project (blank key = no-op) |
+| `VITE_POSTHOG_SESSION_RECORDING` | Enable session replay (`true` / `false`) |
 
 ---
 

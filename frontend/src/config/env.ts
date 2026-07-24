@@ -17,6 +17,10 @@ export const env = {
   enableAnalytics: readFlag(import.meta.env.VITE_ENABLE_ANALYTICS, true),
   posthogKey: import.meta.env.VITE_POSTHOG_KEY ?? '',
   posthogHost: import.meta.env.VITE_POSTHOG_HOST ?? 'https://us.i.posthog.com',
+  posthogSessionRecording: readFlag(
+    import.meta.env.VITE_POSTHOG_SESSION_RECORDING,
+    false,
+  ),
 } as const
 
 export function isCognitoConfigured(): boolean {

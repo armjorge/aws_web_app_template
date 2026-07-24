@@ -66,18 +66,21 @@ variable "lambda_zip_path" {
 }
 
 variable "cors_allow_origins" {
-  description = "CORS origins allowed by the HTTP API."
+  description = "Extra CORS origins (custom domains). CloudFront site URL is appended automatically when the frontend module is enabled."
   type        = list(string)
+  default     = []
 }
 
 variable "cognito_callback_urls" {
-  description = "Cognito OAuth callback URLs."
+  description = "Extra Cognito OAuth callback URLs. CloudFront /auth/callback is appended automatically when the frontend module is enabled."
   type        = list(string)
+  default     = []
 }
 
 variable "cognito_logout_urls" {
-  description = "Cognito OAuth logout URLs."
+  description = "Extra Cognito logout URLs. CloudFront origin is appended automatically when the frontend module is enabled."
   type        = list(string)
+  default     = []
 }
 
 variable "tags" {
