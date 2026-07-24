@@ -1,0 +1,28 @@
+aws_region   = "us-east-1"
+project_name = "aws-web-app"
+environment  = "prod"
+
+enable_frontend            = true
+enable_auth                = true
+enable_api                 = true
+enable_cognito_auth_on_api = true
+enable_hosted_ui           = false
+
+lambda_zip_path = "../../../backend/dist/lambda.zip"
+
+# Replace with your CloudFront site URL after the first apply
+cors_allow_origins = [
+  "https://REPLACE_WITH_CLOUDFRONT_DOMAIN",
+]
+
+cognito_callback_urls = [
+  "https://REPLACE_WITH_CLOUDFRONT_DOMAIN/",
+]
+
+cognito_logout_urls = [
+  "https://REPLACE_WITH_CLOUDFRONT_DOMAIN/",
+]
+
+tags = {
+  Owner = "platform"
+}

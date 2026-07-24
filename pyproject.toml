@@ -1,7 +1,7 @@
 [project]
 name = "aws-web-app-template"
 version = "0.1.0"
-description = "Add your description here"
+description = "Serverless productized web app template (FastAPI Lambda, Vite React, Cognito, OpenTofu)"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = []
