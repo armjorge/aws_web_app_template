@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
 
 import { useAuth } from '../auth/useAuth'
 import { env } from '../config/env'
@@ -12,7 +11,7 @@ type HealthResponse = {
 }
 
 export function HomePage() {
-  const { user, enabled, configured, signOut } = useAuth()
+  const { user, signOut } = useAuth()
   const [health, setHealth] = useState<HealthResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -23,64 +22,34 @@ export function HomePage() {
   }, [])
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-3xl flex-col gap-10 px-6 py-16">
-      <header className="space-y-3">
+    <main className="mx-auto flex min-h-screen w-full max-w-2xl flex-col gap-10 px-6 py-16">
+      <header className="space-y-4">
         <p className="text-sm tracking-[0.18em] uppercase text-[var(--color-muted)]">
-          Serverless template
-        </p>
-        <h1 className="text-4xl font-semibold tracking-tight text-[var(--color-ink)] sm:text-5xl">
           {env.appName}
+        </p>
+        <h1 className="text-5xl font-semibold tracking-tight text-[var(--color-ink)]">
+          Hello, world
         </h1>
         <p className="max-w-xl text-lg text-[var(--color-muted)]">
-          Vite + React frontend, FastAPI on Lambda, Cognito auth, and S3/CloudFront
-          with Origin Access Control.
+          You are signed in
+          {user?.email ? (
+            <>
+              {' '}
+              as <strong className="text-[var(--color-ink)]">{user.email}</strong>
+            </>
+          ) : null}
+          .
         </p>
       </header>
 
-      <section className="space-y-4 border-t border-[var(--color-border)] pt-8">
-        <h2 className="text-xl font-medium">Session</h2>
-        {!enabled && (
-          <p className="text-[var(--color-muted)]">Auth is disabled via VITE_ENABLE_AUTH.</p>
-        )}
-        {enabled && !configured && (
-          <p className="text-[var(--color-muted)]">
-            Cognito env vars are missing. Copy values from{' '}
-            <code className="rounded bg-black/5 px-1.5 py-0.5 text-sm">tofu output</code> into{' '}
-            <code className="rounded bg-black/5 px-1.5 py-0.5 text-sm">.env</code>.
-          </p>
-        )}
-        {user ? (
-          <div className="flex flex-wrap items-center gap-4">
-            <p>
-              Signed in as <strong>{user.email}</strong>
-            </p>
-            <button
-              type="button"
-              onClick={signOut}
-              className="rounded-md bg-[var(--color-accent)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--color-accent-hover)]"
-            >
-              Sign out
-            </button>
-          </div>
-        ) : (
-          enabled &&
-          configured && (
-            <div className="flex gap-3">
-              <Link
-                to="/login"
-                className="rounded-md bg-[var(--color-accent)] px-4 py-2 text-sm font-medium text-white no-underline hover:bg-[var(--color-accent-hover)]"
-              >
-                Sign in
-              </Link>
-              <Link
-                to="/signup"
-                className="rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2 text-sm font-medium text-[var(--color-ink)] no-underline"
-              >
-                Create account
-              </Link>
-            </div>
-          )
-        )}
+      <section className="space-y-3 border-t border-[var(--color-border)] pt-8">
+        <button
+          type="button"
+          onClick={signOut}
+          className="rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2 text-sm font-medium text-[var(--color-ink)] hover:bg-black/[0.03]"
+        >
+          Sign out
+        </button>
       </section>
 
       <section className="space-y-3 border-t border-[var(--color-border)] pt-8">

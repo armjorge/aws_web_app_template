@@ -4,6 +4,10 @@ import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  // amazon-cognito-identity-js / Buffer expect Node's `global`
+  define: {
+    global: 'globalThis',
+  },
   server: {
     port: 5173,
   },

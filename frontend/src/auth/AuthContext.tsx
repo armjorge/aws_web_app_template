@@ -8,15 +8,20 @@ import {
   type ReactNode,
 } from 'react'
 
-import { env, isCognitoConfigured } from '../config/env'
+import { env, isCognitoConfigured, isHostedUiConfigured } from '../config/env'
 import {
+  completeOAuthCallback,
+  confirmForgotPassword,
   confirmSignUp,
+  forgotPassword,
   getCurrentSession,
   getIdToken,
+  hostedUiSignOut,
   sessionToUser,
   signIn,
   signOut as cognitoSignOut,
   signUp,
+  startHostedUiSignIn,
   type AuthUser,
 } from './cognito'
 
@@ -25,9 +30,20 @@ type AuthContextValue = {
   loading: boolean
   configured: boolean
   enabled: boolean
+  hostedUiConfigured: boolean
+  googleEnabled: boolean
   signIn: (email: string, password: string) => Promise<void>
   signUp: (email: string, password: string) => Promise<void>
   confirmSignUp: (email: string, code: string) => Promise<void>
+  forgotPassword: (email: string) => Promise<void>
+  confirmForgotPassword: (
+    email: string,
+    code: string,
+    newPassword: string,
+  ) => Promise<void>
+  signInWithGoogle: () => Promise<void>
+  signInWithHostedUi: () => Promise<void>
+  completeOAuth: (code: string) => Promise<void>
   signOut: () => void
   getAccessToken: () => Promise<string | null>
 }
@@ -41,6 +57,8 @@ type Props = {
 export function AuthProvider({ children }: Props) {
   const enabled = env.enableAuth
   const configured = isCognitoConfigured()
+  const hostedUiConfigured = isHostedUiConfigured()
+  const googleEnabled = hostedUiConfigured && env.enableGoogleAuth
   const [user, setUser] = useState<AuthUser | null>(null)
   const [loading, setLoading] = useState(enabled && configured)
 
@@ -83,10 +101,38 @@ export function AuthProvider({ children }: Props) {
     await confirmSignUp(email, code)
   }, [])
 
+  const handleForgotPassword = useCallback(async (email: string) => {
+    await forgotPassword(email)
+  }, [])
+
+  const handleConfirmForgotPassword = useCallback(
+    async (email: string, code: string, newPassword: string) => {
+      await confirmForgotPassword(email, code, newPassword)
+    },
+    [],
+  )
+
+  const handleGoogle = useCallback(async () => {
+    await startHostedUiSignIn('Google')
+  }, [])
+
+  const handleHostedUi = useCallback(async () => {
+    await startHostedUiSignIn()
+  }, [])
+
+  const handleCompleteOAuth = useCallback(async (code: string) => {
+    const session = await completeOAuthCallback(code)
+    setUser(sessionToUser(session))
+  }, [])
+
   const handleSignOut = useCallback(() => {
+    if (hostedUiConfigured) {
+      hostedUiSignOut()
+      return
+    }
     cognitoSignOut()
     setUser(null)
-  }, [])
+  }, [hostedUiConfigured])
 
   const value = useMemo<AuthContextValue>(
     () => ({
@@ -94,9 +140,16 @@ export function AuthProvider({ children }: Props) {
       loading,
       configured,
       enabled,
+      hostedUiConfigured,
+      googleEnabled,
       signIn: handleSignIn,
       signUp: handleSignUp,
       confirmSignUp: handleConfirm,
+      forgotPassword: handleForgotPassword,
+      confirmForgotPassword: handleConfirmForgotPassword,
+      signInWithGoogle: handleGoogle,
+      signInWithHostedUi: handleHostedUi,
+      completeOAuth: handleCompleteOAuth,
       signOut: handleSignOut,
       getAccessToken: getIdToken,
     }),
@@ -105,9 +158,16 @@ export function AuthProvider({ children }: Props) {
       loading,
       configured,
       enabled,
+      hostedUiConfigured,
+      googleEnabled,
       handleSignIn,
       handleSignUp,
       handleConfirm,
+      handleForgotPassword,
+      handleConfirmForgotPassword,
+      handleGoogle,
+      handleHostedUi,
+      handleCompleteOAuth,
       handleSignOut,
     ],
   )

@@ -1,6 +1,9 @@
 /**
  * AWS Cognito user pool + public SPA app client.
  * No persistent application database for users — Cognito is the identity store.
+ *
+ * Hosted UI / OAuth (authorization code + PKCE) is opt-in via enable_hosted_ui.
+ * Google federation is opt-in when google_client_id and google_client_secret are set.
  */
 
 terraform {
@@ -14,6 +17,8 @@ terraform {
   }
 }
 
+data "aws_region" "current" {}
+
 locals {
   name_prefix = "${var.project_name}-${var.environment}"
   tags = merge(var.tags, {
@@ -21,6 +26,17 @@ locals {
     Environment = var.environment
     Module      = "auth"
   })
+
+  google_enabled = var.enable_hosted_ui && var.google_client_id != "" && var.google_client_secret != ""
+
+  identity_providers = concat(
+    ["COGNITO"],
+    local.google_enabled ? ["Google"] : [],
+  )
+
+  # Cognito rejects domain prefixes containing the reserved word "aws".
+  hosted_ui_domain_prefix = "${replace(var.project_name, "aws-", "")}-${var.environment}-auth"
+  hosted_ui_base_url      = var.enable_hosted_ui ? "https://${local.hosted_ui_domain_prefix}.auth.${data.aws_region.current.region}.amazoncognito.com" : ""
 }
 
 resource "aws_cognito_user_pool" "main" {
@@ -60,6 +76,25 @@ resource "aws_cognito_user_pool" "main" {
   tags = local.tags
 }
 
+resource "aws_cognito_identity_provider" "google" {
+  count = local.google_enabled ? 1 : 0
+
+  user_pool_id  = aws_cognito_user_pool.main.id
+  provider_name = "Google"
+  provider_type = "Google"
+
+  provider_details = {
+    client_id        = var.google_client_id
+    client_secret    = var.google_client_secret
+    authorize_scopes = "profile email openid"
+  }
+
+  attribute_mapping = {
+    email    = "email"
+    username = "sub"
+  }
+}
+
 resource "aws_cognito_user_pool_client" "spa" {
   name         = "${local.name_prefix}-spa"
   user_pool_id = aws_cognito_user_pool.main.id
@@ -74,7 +109,7 @@ resource "aws_cognito_user_pool_client" "spa" {
   allowed_oauth_scopes                 = var.enable_hosted_ui ? ["email", "openid", "profile"] : []
   callback_urls                        = var.enable_hosted_ui ? var.callback_urls : []
   logout_urls                          = var.enable_hosted_ui ? var.logout_urls : []
-  supported_identity_providers         = var.enable_hosted_ui ? ["COGNITO"] : null
+  supported_identity_providers         = var.enable_hosted_ui ? local.identity_providers : null
 
   explicit_auth_flows = [
     "ALLOW_USER_SRP_AUTH",
@@ -91,11 +126,13 @@ resource "aws_cognito_user_pool_client" "spa" {
     id_token      = "hours"
     refresh_token = "days"
   }
+
+  depends_on = [aws_cognito_identity_provider.google]
 }
 
 resource "aws_cognito_user_pool_domain" "main" {
   count = var.enable_hosted_ui ? 1 : 0
 
-  domain       = "${local.name_prefix}-auth"
+  domain       = local.hosted_ui_domain_prefix
   user_pool_id = aws_cognito_user_pool.main.id
 }

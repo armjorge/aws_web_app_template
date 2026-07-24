@@ -3,25 +3,25 @@ import { Link, useNavigate } from 'react-router-dom'
 
 import { useAuth } from '../auth/useAuth'
 
-export function SignupPage() {
-  const { signUp, confirmSignUp, configured } = useAuth()
+export function ForgotPasswordPage() {
+  const { forgotPassword, confirmForgotPassword, configured } = useAuth()
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
   const [code, setCode] = useState('')
-  const [step, setStep] = useState<'register' | 'confirm'>('register')
+  const [newPassword, setNewPassword] = useState('')
+  const [step, setStep] = useState<'request' | 'confirm'>('request')
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
-  async function onRegister(event: FormEvent) {
+  async function onRequest(event: FormEvent) {
     event.preventDefault()
     setError(null)
     setSubmitting(true)
     try {
-      await signUp(email, password)
+      await forgotPassword(email)
       setStep('confirm')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Sign-up failed')
+      setError(err instanceof Error ? err.message : 'Could not start recovery')
     } finally {
       setSubmitting(false)
     }
@@ -32,10 +32,10 @@ export function SignupPage() {
     setError(null)
     setSubmitting(true)
     try {
-      await confirmSignUp(email, code)
+      await confirmForgotPassword(email, code, newPassword)
       navigate('/login')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Confirmation failed')
+      setError(err instanceof Error ? err.message : 'Could not reset password')
     } finally {
       setSubmitting(false)
     }
@@ -43,14 +43,13 @@ export function SignupPage() {
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center px-6 py-16">
-      <h1 className="mb-2 text-3xl font-semibold tracking-tight">Create account</h1>
+      <h1 className="mb-2 text-3xl font-semibold tracking-tight">Reset password</h1>
       <p className="mb-8 text-[var(--color-muted)]">
-        Password must be at least 12 characters with upper, lower, number, and
-        symbol.
+        We will email a verification code to recover your account.
       </p>
 
-      {step === 'register' ? (
-        <form onSubmit={onRegister} className="space-y-4">
+      {step === 'request' ? (
+        <form onSubmit={onRequest} className="space-y-4">
           <label className="block space-y-1.5">
             <span className="text-sm font-medium">Email</span>
             <input
@@ -62,39 +61,40 @@ export function SignupPage() {
               className="w-full rounded-md border border-[var(--color-border)] bg-white px-3 py-2 outline-none ring-[var(--color-accent)] focus:ring-2"
             />
           </label>
-          <label className="block space-y-1.5">
-            <span className="text-sm font-medium">Password</span>
-            <input
-              type="password"
-              required
-              minLength={12}
-              autoComplete="new-password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-md border border-[var(--color-border)] bg-white px-3 py-2 outline-none ring-[var(--color-accent)] focus:ring-2"
-            />
-          </label>
           {error && <p className="text-sm text-red-700">{error}</p>}
           <button
             type="submit"
             disabled={submitting || !configured}
             className="w-full rounded-md bg-[var(--color-accent)] px-4 py-2.5 text-sm font-medium text-white hover:bg-[var(--color-accent-hover)] disabled:opacity-50"
           >
-            {submitting ? 'Creating…' : 'Create account'}
+            {submitting ? 'Sending…' : 'Send reset code'}
           </button>
         </form>
       ) : (
         <form onSubmit={onConfirm} className="space-y-4">
           <p className="text-sm text-[var(--color-muted)]">
-            Enter the verification code emailed to <strong>{email}</strong>.
+            Enter the code sent to <strong>{email}</strong> and choose a new
+            password (min 12 chars, mixed case, number, symbol).
           </p>
           <label className="block space-y-1.5">
-            <span className="text-sm font-medium">Confirmation code</span>
+            <span className="text-sm font-medium">Verification code</span>
             <input
               type="text"
               required
               value={code}
               onChange={(e) => setCode(e.target.value)}
+              className="w-full rounded-md border border-[var(--color-border)] bg-white px-3 py-2 outline-none ring-[var(--color-accent)] focus:ring-2"
+            />
+          </label>
+          <label className="block space-y-1.5">
+            <span className="text-sm font-medium">New password</span>
+            <input
+              type="password"
+              required
+              minLength={12}
+              autoComplete="new-password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
               className="w-full rounded-md border border-[var(--color-border)] bg-white px-3 py-2 outline-none ring-[var(--color-accent)] focus:ring-2"
             />
           </label>
@@ -104,13 +104,13 @@ export function SignupPage() {
             disabled={submitting}
             className="w-full rounded-md bg-[var(--color-accent)] px-4 py-2.5 text-sm font-medium text-white hover:bg-[var(--color-accent-hover)] disabled:opacity-50"
           >
-            {submitting ? 'Confirming…' : 'Confirm account'}
+            {submitting ? 'Updating…' : 'Update password'}
           </button>
         </form>
       )}
 
       <p className="mt-6 text-sm text-[var(--color-muted)]">
-        Already registered? <Link to="/login">Sign in</Link>
+        <Link to="/login">Back to sign in</Link>
       </p>
     </main>
   )

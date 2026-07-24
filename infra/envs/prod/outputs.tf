@@ -32,3 +32,13 @@ output "cognito_hosted_ui_domain" {
   description = "Cognito hosted UI domain prefix (if enabled)."
   value       = try(module.auth[0].hosted_ui_domain, null)
 }
+
+output "cognito_hosted_ui_base_url" {
+  description = "Full Cognito hosted UI base URL (if enabled)."
+  value       = try(module.auth[0].hosted_ui_base_url, null)
+}
+
+output "cognito_google_enabled" {
+  description = "Whether Google sign-in is configured on the user pool."
+  value       = try(module.auth[0].google_enabled, false)
+}

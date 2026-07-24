@@ -39,11 +39,13 @@ module "auth" {
   count  = var.enable_auth ? 1 : 0
   source = "../../modules/auth"
 
-  project_name     = var.project_name
-  environment      = var.environment
-  callback_urls    = var.cognito_callback_urls
-  logout_urls      = var.cognito_logout_urls
-  enable_hosted_ui = var.enable_hosted_ui
+  project_name         = var.project_name
+  environment          = var.environment
+  callback_urls        = var.cognito_callback_urls
+  logout_urls          = var.cognito_logout_urls
+  enable_hosted_ui     = var.enable_hosted_ui
+  google_client_id     = var.google_client_id
+  google_client_secret = var.google_client_secret
 }
 
 module "frontend" {

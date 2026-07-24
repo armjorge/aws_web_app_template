@@ -11,7 +11,7 @@ variable "environment" {
 variable "callback_urls" {
   description = "Allowed OAuth callback URLs for the SPA app client."
   type        = list(string)
-  default     = ["http://localhost:5173/"]
+  default     = ["http://localhost:5173/auth/callback"]
 }
 
 variable "logout_urls" {
@@ -21,9 +21,22 @@ variable "logout_urls" {
 }
 
 variable "enable_hosted_ui" {
-  description = "Create a Cognito hosted UI domain (toggleable template feature)."
+  description = "Create a Cognito hosted UI domain and enable the authorization-code OAuth flow (required for social IdPs)."
   type        = bool
   default     = false
+}
+
+variable "google_client_id" {
+  description = "Google OAuth client ID. Leave empty to skip the Google identity provider."
+  type        = string
+  default     = ""
+}
+
+variable "google_client_secret" {
+  description = "Google OAuth client secret. Leave empty to skip the Google identity provider."
+  type        = string
+  default     = ""
+  sensitive   = true
 }
 
 variable "password_minimum_length" {

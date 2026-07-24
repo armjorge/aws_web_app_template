@@ -41,9 +41,22 @@ variable "enable_cognito_auth_on_api" {
 }
 
 variable "enable_hosted_ui" {
-  description = "Create a Cognito hosted UI domain."
+  description = "Create a Cognito hosted UI domain and enable OAuth (required for Google sign-in)."
   type        = bool
   default     = false
+}
+
+variable "google_client_id" {
+  description = "Google OAuth client ID for Cognito federation (optional)."
+  type        = string
+  default     = ""
+}
+
+variable "google_client_secret" {
+  description = "Google OAuth client secret for Cognito federation (optional)."
+  type        = string
+  default     = ""
+  sensitive   = true
 }
 
 variable "lambda_zip_path" {

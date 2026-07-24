@@ -22,3 +22,13 @@ output "hosted_ui_domain" {
   description = "Cognito hosted UI domain prefix (empty when disabled)."
   value       = try(aws_cognito_user_pool_domain.main[0].domain, "")
 }
+
+output "hosted_ui_base_url" {
+  description = "Full Cognito hosted UI base URL (empty when disabled)."
+  value       = local.hosted_ui_base_url
+}
+
+output "google_enabled" {
+  description = "Whether the Google identity provider is configured."
+  value       = nonsensitive(local.google_enabled)
+}
